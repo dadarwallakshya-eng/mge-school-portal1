@@ -646,8 +646,8 @@ async function renderStudents(unit){
         <td class="fs-12">${s.phone||s.father_phone||'—'}</td>
         <td><span class="badge bg-grey">${s.category||'General'}</span></td>
         <td>
-          <button class="btn btn-outline btn-xs" onclick="viewStudent('${s.id}','${unit}')">👁</button>
-          <button class="btn btn-danger btn-xs" onclick="delStudent('${s.id}','${unit}')">🗑</button>
+          <button class="btn btn-outline btn-xs" onclick="viewStudent('${s.admission_id}','${unit}')">👁</button>
+          <button class="btn btn-danger btn-xs" onclick="delStudent('${s.admission_id}','${unit}')">🗑</button>
         </td></tr>`).join('')}</tbody></table>
       <div class="mt-8 tc-muted fs-12">Showing ${rows.length} students</div></div>`
     :'<p class="tc-muted" style="text-align:center;padding:28px">No students found.</p>';
@@ -713,7 +713,7 @@ async function viewStudent(id,unit){
             ${photoHtml}
             ${!photoUrl?`<span>${initials}</span>`:''}
           </div>
-          <button class="btn btn-outline btn-xs mt-8" style="width:80px;font-size:10px;padding:3px 4px" onclick="editStudentPhoto('${s.id}','${s.photo_url||''}','${unit}')">✏️ Edit Photo</button>
+          <button class="btn btn-outline btn-xs mt-8" style="width:80px;font-size:10px;padding:3px 4px" onclick="editStudentPhoto('${s.admission_id}','${s.photo_url||''}','${unit}')">✏️ Edit Photo</button>
         </div>
 
         <!-- Info -->
@@ -748,7 +748,7 @@ async function viewStudent(id,unit){
       <div class="card" style="margin:0">
         <div class="card-hd">
           <h3>💰 Fee Payments</h3>
-          <button class="btn btn-gold btn-sm" onclick="closeModal();payModal('${s.id}','${s.roll_no||''}','${s.name.replace(/'/g,"\\'")}','${unit}')">+ Record</button>
+          <button class="btn btn-gold btn-sm" onclick="closeModal();payModal('${s.admission_id}','${s.roll_no||''}','${s.name.replace(/'/g,"\\'")}','${unit}')">+ Record</button>
         </div>
         <div class="card-body">
           <div class="flex-b mb-10">
