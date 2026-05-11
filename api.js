@@ -120,7 +120,7 @@ if (user.role === 'college_principal') {
 
         if (req.method === 'GET') {
           if (id) {
-            const r = await sql`SELECT * FROM students WHERE id=${id}`;
+            const r = await sql`SELECT * FROM students WHERE admission_id=${id}`;
             return res.json(r[0]||null);
           }
           let rows;
@@ -156,16 +156,16 @@ if (user.role === 'college_principal') {
 
         if (req.method === 'PATCH') {
           if (!id) return res.status(400).json({ error:'id required' });
-          const cur = (await sql`SELECT * FROM students WHERE id=${id}`)[0];
+          const cur = (await sql`SELECT * FROM students WHERE admission_id=${id}`)[0];
           if (!cur) return res.status(404).json({ error:'Not found' });
           const b = req.body||{};
-          const r = await sql`UPDATE students SET name=${b.name??cur.name},name_hindi=${b.nameHindi??cur.name_hindi},roll_no=${b.rollNo??cur.roll_no},class=${b.class??cur.class},section=${b.section??cur.section},gender=${b.gender??cur.gender},dob=${b.dob??cur.dob},father_name=${b.fatherName??cur.father_name},mother_name=${b.motherName??cur.mother_name},phone=${b.phone??cur.phone},father_phone=${b.fatherPhone??cur.father_phone},address=${b.address??cur.address},aadhar=${b.aadhar??cur.aadhar},category=${b.category??cur.category},photo_url=${b.photoUrl??cur.photo_url},updated_at=NOW() WHERE id=${id} RETURNING *`;
+          const r = await sql`UPDATE students SET name=${b.name??cur.name},name_hindi=${b.nameHindi??cur.name_hindi},roll_no=${b.rollNo??cur.roll_no},class=${b.class??cur.class},section=${b.section??cur.section},gender=${b.gender??cur.gender},dob=${b.dob??cur.dob},father_name=${b.fatherName??cur.father_name},mother_name=${b.motherName??cur.mother_name},phone=${b.phone??cur.phone},father_phone=${b.fatherPhone??cur.father_phone},address=${b.address??cur.address},aadhar=${b.aadhar??cur.aadhar},category=${b.category??cur.category},photo_url=${b.photoUrl??cur.photo_url},updated_at=NOW() WHERE admission_id=${id} RETURNING *`;
           return res.json(r[0]);
         }
 
         if (req.method === 'DELETE') {
           if (!id) return res.status(400).json({ error:'id required' });
-          await sql`DELETE FROM students WHERE id=${id}`;
+          await sql`DELETE FROM students WHERE admission_id=${id}`;
           return res.json({ success:true });
         }
         break;
