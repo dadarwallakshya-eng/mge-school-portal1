@@ -101,7 +101,22 @@ case 'seed': {
       // ════════════ STUDENTS ════════════
       case 'students': {
         const user = requireAuth(req, res); if (!user) return;
-        const { id, unit, class:cls, search } = req.query;
+        const { id, class:cls, search } = req.query;
+
+let unit = req.query.unit;
+
+// 🔐 FORCE ROLE-BASED UNIT ACCESS
+if (user.role === 'hindi_principal') {
+  unit = 'hindi';
+}
+
+if (user.role === 'english_principal') {
+  unit = 'english';
+}
+
+if (user.role === 'college_principal') {
+  unit = 'college';
+}
 
         if (req.method === 'GET') {
           if (id) {
@@ -163,14 +178,14 @@ case 'seed': {
 
         if (req.method === 'GET') {
           if (studentId) {
-            const r = await sql`SELECT fp.*, s.name as student_name, s.roll_no, s.class FROM fee_payments fp LEFT JOIN students s ON fp.student_id=s.id WHERE fp.student_id=${studentId} ORDER BY fp.payment_date DESC`;
+            const r = await sql`SELECT fp.* FROM fee_payments fp WHERE fp.student_id=${studentId} ORDER BY fp.payment_date DESC`;
             return res.json(r);
           }
           if (unit) {
-            const r = await sql`SELECT fp.*, s.name as student_name, s.roll_no, s.class FROM fee_payments fp LEFT JOIN students s ON fp.student_id=s.id WHERE fp.unit=${unit} ORDER BY fp.payment_date DESC LIMIT 300`;
+            const r = await sql`SELECT fp.* FROM fee_payments fp WHERE fp.unit=${unit} ORDER BY fp.payment_date DESC LIMIT 300`;
             return res.json(r);
           }
-          const r = await sql`SELECT fp.*, s.name as student_name, s.roll_no FROM fee_payments fp LEFT JOIN students s ON fp.student_id=s.id ORDER BY fp.payment_date DESC LIMIT 500`;
+          const r = await sql`SELECT fp.* FROM fee_payments fp ORDER BY fp.payment_date DESC LIMIT 500`;
           return res.json(r);
         }
 
@@ -275,7 +290,7 @@ case 'seed': {
             const accounts = await sql`SELECT * FROM accounts WHERE unit=${unit} ORDER BY account_type`;
             const income   = await sql`SELECT * FROM income WHERE unit=${unit} ORDER BY date DESC LIMIT 100`;
             const expenses = await sql`SELECT * FROM expenses WHERE unit=${unit} ORDER BY date DESC LIMIT 100`;
-            const fees     = await sql`SELECT fp.*, s.name as student_name, s.roll_no, s.class FROM fee_payments fp LEFT JOIN students s ON fp.student_id=s.id WHERE fp.unit=${unit} ORDER BY fp.payment_date DESC LIMIT 200`;
+            const fees     = await sql`SELECT fp.* FROM fee_payments fp WHERE fp.unit=${unit} ORDER BY fp.payment_date DESC LIMIT 200`;
             return res.json({ accounts, income, expenses, fees });
           }
           return res.json(await sql`SELECT * FROM accounts ORDER BY unit, account_type`);
