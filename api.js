@@ -159,7 +159,7 @@ if (user.role === 'college_principal') {
           const cur = (await sql`SELECT * FROM students WHERE admission_id=${id}`)[0];
           if (!cur) return res.status(404).json({ error:'Not found' });
           const b = req.body||{};
-          const r = await sql`UPDATE students SET name=${b.name??cur.name},name_hindi=${b.nameHindi??cur.name_hindi},roll_no=${b.rollNo??cur.roll_no},class=${b.class??cur.class},section=${b.section??cur.section},gender=${b.gender??cur.gender},dob=${b.dob??cur.dob},father_name=${b.fatherName??cur.father_name},mother_name=${b.motherName??cur.mother_name},phone=${b.phone??cur.phone},father_phone=${b.fatherPhone??cur.father_phone},address=${b.address??cur.address},aadhar=${b.aadhar??cur.aadhar},category=${b.category??cur.category},photo_url=${b.photoUrl??cur.photo_url},updated_at=NOW() WHERE admission_id=${id} RETURNING *`;
+          const r = await sql`UPDATE students SET name=${b.name??cur.name},name_hindi=${b.nameHindi??cur.name_hindi},roll_no=${b.rollNo??cur.roll_no},class=${b.class??cur.class},section=${b.section??cur.section},gender=${b.gender??cur.gender},dob=${b.dob??cur.dob},father_name=${b.fatherName??cur.father_name},mother_name=${b.motherName??cur.mother_name},phone=${b.phone??cur.phone},father_phone=${b.fatherPhone??cur.father_phone},address=${b.address??cur.address},aadhar=${b.aadhar??cur.aadhar},category=${b.category??cur.category},photo_url=${b.photoUrl??cur.photo_url},updated_at=NOW() WHERE id=${id} RETURNING *`;
           return res.json(r[0]);
         }
 
@@ -178,14 +178,14 @@ if (user.role === 'college_principal') {
 
         if (req.method === 'GET') {
           if (studentId) {
-            const r = await sql`SELECT fp.* FROM fee_payments fp WHERE fp.student_id=${studentId} ORDER BY fp.payment_date DESC`;
+            const r = await sql`SELECT fp.*, s.name as student_name, s.roll_no, s.class FROM fee_payments fp LEFT JOIN students s ON fp.student_id=s.id WHERE fp.student_id=${studentId} ORDER BY fp.payment_date DESC`;
             return res.json(r);
           }
           if (unit) {
-            const r = await sql`SELECT fp.* FROM fee_payments fp WHERE fp.unit=${unit} ORDER BY fp.payment_date DESC LIMIT 300`;
+            const r = await sql`SELECT fp.*, s.name as student_name, s.roll_no, s.class FROM fee_payments fp LEFT JOIN students s ON fp.student_id=s.id WHERE fp.unit=${unit} ORDER BY fp.payment_date DESC LIMIT 300`;
             return res.json(r);
           }
-          const r = await sql`SELECT fp.* FROM fee_payments fp ORDER BY fp.payment_date DESC LIMIT 500`;
+          const r = await sql`SELECT fp.*, s.name as student_name, s.roll_no FROM fee_payments fp LEFT JOIN students s ON fp.student_id=s.id ORDER BY fp.payment_date DESC LIMIT 500`;
           return res.json(r);
         }
 
@@ -193,20 +193,11 @@ if (user.role === 'college_principal') {
           const { studentId:sid, unit:u, amount, mode, receiptNo, paymentDate, feeType, notes } = req.body||{};
           if (!sid||!amount||!u) return res.status(400).json({ error:'studentId, unit, amount required' });
           const r = await sql`INSERT INTO fee_payments (student_id,unit,amount,mode,receipt_no,payment_date,fee_type,notes) VALUES (${sid},${u},${+amount},${mode||'Cash'},${receiptNo||null},${paymentDate||new Date().toISOString().slice(0,10)},${feeType||'Tuition'},${notes||null}) RETURNING *`;
-          // AUTO UPDATE BALANCE
-          if (+amount > 0 && u) {
-            await sql`UPDATE accounts SET balance = balance + ${+amount}, updated_at = NOW() WHERE unit = ${u} AND account_type = 'Cash'`.catch(()=>{});
-          }
           return res.status(201).json(r[0]);
         }
 
         if (req.method === 'DELETE') {
           if (!id) return res.status(400).json({ error:'id required' });
-          // Reverse balance on delete
-          const fee = await sql`SELECT * FROM fee_payments WHERE id=${id} LIMIT 1`.catch(()=>[]);
-          if (fee.length && +fee[0].amount > 0 && fee[0].unit) {
-            await sql`UPDATE accounts SET balance = balance - ${+fee[0].amount}, updated_at = NOW() WHERE unit = ${fee[0].unit} AND account_type = 'Cash'`.catch(()=>{});
-          }
           await sql`DELETE FROM fee_payments WHERE id=${id}`;
           return res.json({ success:true });
         }
@@ -271,20 +262,11 @@ if (user.role === 'college_principal') {
           const existing = await sql`SELECT id FROM salary_payments WHERE teacher_id=${tid} AND month=${m} AND year=${+y}`;
           if (existing.length>0) return res.status(409).json({ error:'Already recorded for this month' });
           const r = await sql`INSERT INTO salary_payments (teacher_id,unit,month,year,amount,mode,paid_date,remarks) VALUES (${tid},${u},${m},${+y},${+amount},${mode||'Bank Transfer'},${paidDate||new Date().toISOString().slice(0,10)},${remarks||null}) RETURNING *`;
-          // AUTO DEDUCT SALARY FROM BALANCE
-          if (+amount > 0 && u) {
-            await sql`UPDATE accounts SET balance = GREATEST(0, balance - ${+amount}), updated_at = NOW() WHERE unit = ${u} AND account_type = 'Cash'`.catch(()=>{});
-          }
           return res.status(201).json(r[0]);
         }
 
         if (req.method === 'DELETE') {
           if (!id) return res.status(400).json({ error:'id required' });
-          // Restore balance on salary delete
-          const sal = await sql`SELECT * FROM salary_payments WHERE id=${id} LIMIT 1`.catch(()=>[]);
-          if (sal.length && +sal[0].amount > 0 && sal[0].unit) {
-            await sql`UPDATE accounts SET balance = balance + ${+sal[0].amount}, updated_at = NOW() WHERE unit = ${sal[0].unit} AND account_type = 'Cash'`.catch(()=>{});
-          }
           await sql`DELETE FROM salary_payments WHERE id=${id}`;
           return res.json({ success:true });
         }
@@ -308,7 +290,7 @@ if (user.role === 'college_principal') {
             const accounts = await sql`SELECT * FROM accounts WHERE unit=${unit} ORDER BY account_type`;
             const income   = await sql`SELECT * FROM income WHERE unit=${unit} ORDER BY date DESC LIMIT 100`;
             const expenses = await sql`SELECT * FROM expenses WHERE unit=${unit} ORDER BY date DESC LIMIT 100`;
-            const fees     = await sql`SELECT fp.* FROM fee_payments fp WHERE fp.unit=${unit} ORDER BY fp.payment_date DESC LIMIT 200`;
+            const fees     = await sql`SELECT fp.*, s.name as student_name, s.roll_no, s.class FROM fee_payments fp LEFT JOIN students s ON fp.student_id=s.id WHERE fp.unit=${unit} ORDER BY fp.payment_date DESC LIMIT 200`;
             return res.json({ accounts, income, expenses, fees });
           }
           return res.json(await sql`SELECT * FROM accounts ORDER BY unit, account_type`);
