@@ -634,7 +634,7 @@ async function renderStudents(unit){
     let rows=await GET(`/students?unit=${unit}${search?'&search='+encodeURIComponent(search):''}${cls?'&class='+encodeURIComponent(cls):''}`);
     if(gen) rows=rows.filter(s=>s.gender===gen);
     el.innerHTML=rows.length?`<div class="table-wrap"><table>
-      <thead><tr><th>Photo</th><th>Admission ID</th><th>Roll No</th><th>Name</th><th>Class</th><th>Sec</th><th>Gender</th><th>Father</th><th>Phone</th><th>Category</th><th>Actions</th></tr></thead>
+      <thead><tr><th>Photo</th><th>Admission ID</th><th>Roll No</th><th>Name</th><th>Class</th><th>Sec</th><th>Gender</th><th>Father</th><th>Mother</th><th>Phone</th><th>Category</th><th>Actions</th></tr></thead>
       <tbody>${rows.map(s=>`<tr>
         <td>${photoAvatar(s.photo_url,s.name,34)}</td>
         <td><span class="badge bg-purple fw-7">${s.admission_id||'—'}</span></td>
@@ -643,11 +643,12 @@ async function renderStudents(unit){
         <td>${s.class||'—'}</td><td>${s.section||'—'}</td>
         <td>${bdg(s.gender)}</td>
         <td class="fs-12 tc-muted">${s.father_name||'—'}</td>
+        <td class="fs-12 tc-muted">${s.mother_name||'—'}</td>
         <td class="fs-12">${s.phone||s.father_phone||'—'}</td>
         <td><span class="badge bg-grey">${s.category||'General'}</span></td>
         <td>
-          <button class="btn btn-outline btn-xs" onclick="viewStudent('${s.admission_id}','${unit}')">👁</button>
-          <button class="btn btn-danger btn-xs" onclick="delStudent('${s.admission_id}','${unit}')">🗑</button>
+          <button class="btn btn-outline btn-xs" onclick="viewStudent('${s.id}','${unit}')">👁</button>
+          <button class="btn btn-danger btn-xs" onclick="delStudent('${s.id}','${unit}')">🗑</button>
         </td></tr>`).join('')}</tbody></table>
       <div class="mt-8 tc-muted fs-12">Showing ${rows.length} students</div></div>`
     :'<p class="tc-muted" style="text-align:center;padding:28px">No students found.</p>';
@@ -667,6 +668,7 @@ function addStudentModal(unit){
       <div class="form-group"><label>Date of Birth</label><input type="date" id="m-dob"></div>
       <div class="form-group"><label>Category</label><select id="m-cat"><option>General</option><option>OBC</option><option>SC</option><option>ST</option><option>EWS</option></select></div>
       <div class="form-group"><label>Father's Name</label><input type="text" id="m-father"></div>
+      <div class="form-group"><label>Mother's Name</label><input type="text" id="m-mother"></div>
       <div class="form-group"><label>Father's Phone</label><input type="text" id="m-fphone"></div>
       <div class="form-group"><label>Student Phone</label><input type="text" id="m-phone"></div>
       <div class="form-group"><label>Admission Date</label><input type="date" id="m-admit"></div>
@@ -682,7 +684,7 @@ async function submitAddStudent(unit){
   const name=val('m-name'),cls=val('m-class');
   if(!name||!cls){ toast('Name and Class are required','error'); return; }
   try{
-    await POST('/students',{unit,name,nameHindi:val('m-hindi'),rollNo:val('m-roll'),class:cls,section:val('m-sec'),gender:val('m-gender'),dob:val('m-dob'),category:val('m-cat'),fatherName:val('m-father'),fatherPhone:val('m-fphone'),phone:val('m-phone'),admissionDate:val('m-admit'),aadhar:val('m-aadhar'),address:val('m-addr'),photoUrl:val('m-photo')});
+    await POST('/students',{unit,name,nameHindi:val('m-hindi'),rollNo:val('m-roll'),class:cls,section:val('m-sec'),gender:val('m-gender'),dob:val('m-dob'),category:val('m-cat'),fatherName:val('m-father'),motherName:val('m-mother'),fatherPhone:val('m-fphone'),phone:val('m-phone'),admissionDate:val('m-admit'),aadhar:val('m-aadhar'),address:val('m-addr'),photoUrl:val('m-photo')});
     closeModal(); toast('✅ Student added!'); renderStudents(unit);
   }catch(e){ toast('⚠️ '+e.message,'error'); }
 }
@@ -713,7 +715,7 @@ async function viewStudent(id,unit){
             ${photoHtml}
             ${!photoUrl?`<span>${initials}</span>`:''}
           </div>
-          <button class="btn btn-outline btn-xs mt-8" style="width:80px;font-size:10px;padding:3px 4px" onclick="editStudentPhoto('${s.admission_id}','${s.photo_url||''}','${unit}')">✏️ Edit Photo</button>
+          <button class="btn btn-outline btn-xs mt-8" style="width:80px;font-size:10px;padding:3px 4px" onclick="editStudentPhoto('${s.id}','${s.photo_url||''}','${unit}')">✏️ Edit Photo</button>
         </div>
 
         <!-- Info -->
@@ -735,7 +737,8 @@ async function viewStudent(id,unit){
               ${row('Admission', fmtD(s.admission_date))}
             </div>
             <div>
-              ${row('Father', s.father_name||'—')}
+              ${row('Father Name', s.father_name||'—')}
+              ${row('Mother Name', s.mother_name||'—')}
               ${row('Father Phone', s.father_phone||'—')}
               ${row('Student Phone', s.phone||'—')}
               ${row('Address', s.address||'—')}
@@ -748,7 +751,7 @@ async function viewStudent(id,unit){
       <div class="card" style="margin:0">
         <div class="card-hd">
           <h3>💰 Fee Payments</h3>
-          <button class="btn btn-gold btn-sm" onclick="closeModal();payModal('${s.admission_id}','${s.roll_no||''}','${s.name.replace(/'/g,"\\'")}','${unit}')">+ Record</button>
+          <button class="btn btn-gold btn-sm" onclick="closeModal();payModal('${s.id}','${s.roll_no||''}','${s.name.replace(/'/g,"\\'")}','${unit}')">+ Record</button>
         </div>
         <div class="card-body">
           <div class="flex-b mb-10">
