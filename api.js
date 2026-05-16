@@ -120,7 +120,7 @@ if (user.role === 'college_principal') {
 
         if (req.method === 'GET') {
           if (id) {
-            const r = await sql`SELECT * FROM students WHERE admission_id=${id}`;
+            const r = await sql`SELECT * FROM students WHERE id=${id}`;
             return res.json(r[0]||null);
           }
           let rows;
@@ -156,7 +156,7 @@ if (user.role === 'college_principal') {
 
         if (req.method === 'PATCH') {
           if (!id) return res.status(400).json({ error:'id required' });
-          const cur = (await sql`SELECT * FROM students WHERE admission_id=${id}`)[0];
+          const cur = (await sql`SELECT * FROM students WHERE id=${id}`)[0];
           if (!cur) return res.status(404).json({ error:'Not found' });
           const b = req.body||{};
           const r = await sql`UPDATE students SET name=${b.name??cur.name},name_hindi=${b.nameHindi??cur.name_hindi},roll_no=${b.rollNo??cur.roll_no},class=${b.class??cur.class},section=${b.section??cur.section},gender=${b.gender??cur.gender},dob=${b.dob??cur.dob},father_name=${b.fatherName??cur.father_name},mother_name=${b.motherName??cur.mother_name},phone=${b.phone??cur.phone},father_phone=${b.fatherPhone??cur.father_phone},address=${b.address??cur.address},aadhar=${b.aadhar??cur.aadhar},category=${b.category??cur.category},photo_url=${b.photoUrl??cur.photo_url},updated_at=NOW() WHERE id=${id} RETURNING *`;
@@ -165,7 +165,7 @@ if (user.role === 'college_principal') {
 
         if (req.method === 'DELETE') {
           if (!id) return res.status(400).json({ error:'id required' });
-          await sql`DELETE FROM students WHERE admission_id=${id}`;
+          await sql`DELETE FROM students WHERE id=${id}`;
           return res.json({ success:true });
         }
         break;
@@ -178,14 +178,14 @@ if (user.role === 'college_principal') {
 
         if (req.method === 'GET') {
           if (studentId) {
-            const r = await sql`SELECT fp.*, s.name as student_name, s.roll_no, s.class FROM fee_payments fp LEFT JOIN students s ON fp.student_id=s.id WHERE fp.student_id=${studentId} ORDER BY fp.payment_date DESC`;
+            const r = await sql`SELECT fp.* FROM fee_payments fp WHERE fp.student_id=${studentId} ORDER BY fp.payment_date DESC`;
             return res.json(r);
           }
           if (unit) {
-            const r = await sql`SELECT fp.*, s.name as student_name, s.roll_no, s.class FROM fee_payments fp LEFT JOIN students s ON fp.student_id=s.id WHERE fp.unit=${unit} ORDER BY fp.payment_date DESC LIMIT 300`;
+            const r = await sql`SELECT fp.* FROM fee_payments fp WHERE fp.unit=${unit} ORDER BY fp.payment_date DESC LIMIT 300`;
             return res.json(r);
           }
-          const r = await sql`SELECT fp.*, s.name as student_name, s.roll_no FROM fee_payments fp LEFT JOIN students s ON fp.student_id=s.id ORDER BY fp.payment_date DESC LIMIT 500`;
+          const r = await sql`SELECT fp.* FROM fee_payments fp ORDER BY fp.payment_date DESC LIMIT 500`;
           return res.json(r);
         }
 
@@ -290,7 +290,7 @@ if (user.role === 'college_principal') {
             const accounts = await sql`SELECT * FROM accounts WHERE unit=${unit} ORDER BY account_type`;
             const income   = await sql`SELECT * FROM income WHERE unit=${unit} ORDER BY date DESC LIMIT 100`;
             const expenses = await sql`SELECT * FROM expenses WHERE unit=${unit} ORDER BY date DESC LIMIT 100`;
-            const fees     = await sql`SELECT fp.*, s.name as student_name, s.roll_no, s.class FROM fee_payments fp LEFT JOIN students s ON fp.student_id=s.id WHERE fp.unit=${unit} ORDER BY fp.payment_date DESC LIMIT 200`;
+            const fees     = await sql`SELECT fp.* FROM fee_payments fp WHERE fp.unit=${unit} ORDER BY fp.payment_date DESC LIMIT 200`;
             return res.json({ accounts, income, expenses, fees });
           }
           return res.json(await sql`SELECT * FROM accounts ORDER BY unit, account_type`);
